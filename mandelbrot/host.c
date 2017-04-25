@@ -44,10 +44,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define BUF_OFFSET 0x01000000
 #define MAXCORES 16
+
+#if 0
 #define FBDEV "/dev/fb0"
+#else
+#include "bmp.h"
+#endif
+
 #define ROWS 4
 #define COLS 4
-#define FRAMES 2000000
+#define FRAMES 10
+
+#define BPP 4
+#define NUM_PIXELS_X 640
+#define NUM_PIXELS_Y 480
+#define BMP_FILE_NAME "mandelbrot.bmp"
 
 static inline void nano_wait(uint32_t sec, uint32_t nsec)
 {
@@ -67,6 +78,7 @@ int main(int argc, char *argv[])
   struct timespec time;
   double time0, time1;
 
+#if 0
   int fb = open(FBDEV, O_RDWR);
   if (fb > 0)
   {
@@ -99,6 +111,13 @@ int main(int argc, char *argv[])
     }
     close(fb);
   }
+#else
+  msg.fbinfo.xres_virtual = NUM_PIXELS_X;
+  msg.fbinfo.yres_virtual = NUM_PIXELS_Y;
+  msg.fbinfo.line_length = NUM_PIXELS_X * BPP;
+  msg.fbinfo.smem_start = malloc(NUM_PIXELS_X * NUM_PIXELS_Y * BPP);
+#endif
+
 
   e_init(NULL);
   e_reset_system();
@@ -172,5 +191,10 @@ int main(int argc, char *argv[])
   e_close(&edev);
   e_free(&emem);
   e_finalize();
+
+  printf("Writing to file: %s\n", BMP_FILE_NAME);
+  drawbmp (BMP_FILE_NAME, msg.fbinfo.smem_start, msg.fbinfo.xres_virtual, msg.fbinfo.yres_virtual, BPP);
+
   return 0;
 }
+

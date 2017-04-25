@@ -68,19 +68,27 @@
 #include <assert.h>
 
 #define __signed__
+#if 0
 #include <linux/fb.h>
+#else
+#include "bmp.h"
+#endif
 
 // SCALE: 1, 2, or 4
 #define SCALE 1
 
 #define FBDEV "/dev/fb0"
-#define FRAMES 409
+#define FRAMES 10
 
 #define PAGE_SIZE 0x2000
 #define CX -0.6510976f
 #define CY 0.4920654f
 #define MAXI 64
 #define BPP 4
+
+#define NUM_PIXELS_X 640
+#define NUM_PIXELS_Y 480
+#define BMP_FILE_NAME "mandelbrot.bmp"
 
 
 int main(int argc, char *argv[])
@@ -99,7 +107,7 @@ int main(int argc, char *argv[])
 	printf("Zynq is quite slower (be patient).\n");
 	printf("Choose which device to use (0=Zynq, 1=Epiphany): ");
 	omp_set_default_device(getchar() != '0');
-
+#if 0
 	int fb = open(FBDEV, O_RDWR);
 	if (fb > 0)
 	{
@@ -141,7 +149,12 @@ int main(int argc, char *argv[])
 		printf("Error opening frame buffer\n");
 		exit(EXIT_FAILURE);
 	}
-
+#else
+        xres_virtual = NUM_PIXELS_X;
+        yres_virtual = NUM_PIXELS_Y;
+        line_length = NUM_PIXELS_X * BPP;
+        smem_start = malloc(NUM_PIXELS_X * NUM_PIXELS_Y * BPP);
+#endif
 	printf("\n\nCalculating Mandelbrot set for image %d x %d...\n", xres_virtual,
 	       yres_virtual);
 	printf("...on %s.\n", omp_get_default_device() == 0 ? "Zynq" : "Epiphany");
@@ -260,6 +273,10 @@ int main(int argc, char *argv[])
 	time1 = time.tv_sec + time.tv_nsec * 1.0e-9;
 	printf("frames: %d\n", FRAMES);
 	printf("time: %f sec\n", time1 - time0);
+
+
+        printf("Writing to file: %s\n", BMP_FILE_NAME);
+        drawbmp (BMP_FILE_NAME, smem_start, xres_virtual, yres_virtual, BPP);
 
 	return 0;
 }

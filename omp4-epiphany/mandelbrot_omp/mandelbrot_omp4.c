@@ -97,7 +97,6 @@ int main(int argc, char *argv[])
 	double time0, time1;
 	char *fbp;
 
-	char *smem_start;
 	unsigned int smem_len;
 	unsigned int line_length;
 	unsigned int xres_virtual;
@@ -108,6 +107,7 @@ int main(int argc, char *argv[])
 	printf("Choose which device to use (0=Zynq, 1=Epiphany): ");
 	omp_set_default_device(getchar() != '0');
 #if 0
+	char *smem_start;
 	int fb = open(FBDEV, O_RDWR);
 	if (fb > 0)
 	{
@@ -150,10 +150,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 #else
+        char smem_start[NUM_PIXELS_X * NUM_PIXELS_Y * BPP];
+
         xres_virtual = NUM_PIXELS_X;
         yres_virtual = NUM_PIXELS_Y;
         line_length = NUM_PIXELS_X * BPP;
-        smem_start = malloc(NUM_PIXELS_X * NUM_PIXELS_Y * BPP);
 #endif
 	printf("\n\nCalculating Mandelbrot set for image %d x %d...\n", xres_virtual,
 	       yres_virtual);
@@ -164,7 +165,7 @@ int main(int argc, char *argv[])
 
 	#pragma omp target data
 	{
-		#pragma omp target map(to:xres_virtual, yres_virtual, smem_start, line_length)
+		#pragma omp target map(to:xres_virtual, yres_virtual, line_length) map(from:smem_start)
 		{
 			#pragma omp parallel shared(xres_virtual, yres_virtual, smem_start, line_length)
 			{
